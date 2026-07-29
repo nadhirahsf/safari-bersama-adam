@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="ms">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Jip Safari Adam - Permainan Membaca Ayat</title>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Comic Sans MS', 'Chalkboard SE', 'Fredoka', sans-serif;
+        }
+
+        body {
+            margin: 0;
+            padding: 20px;
+            background-color: #e8f5e9;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .game-container {
+            width: 100%;
+            max-width: 900px;
+            background: #ffffff;
+            border: 6px solid #4caf50;
+            border-radius: 24px;
+            padding: 24px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.15);
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        /* Header & Markah */
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background: #fff9c4;
+            padding: 12px 24px;
+            border-radius: 16px;
+            border: 3px solid #fbc02d;
+        }
+
+        .title {
+            font-size: 1.6rem;
+            font-weight: bold;
+            color: #2e7d32;
+        }
+
+        .score-board {
+            font-size: 1.5rem;
+            font-weight: bold;
+            color: #e65100;
+            background: #fff;
+            padding: 8px 16px;
+            border-radius: 12px;
+            border: 2px solid #ff9800;
+        }
+
+        /* Pentas Visual Safari */
+        .safari-stage {
+            position: relative;
+            height: 220px;
+            background: linear-gradient(#81d4fa 60%, #a5d6a7 60%, #81c784 100%);
+            border-radius: 16px;
+            overflow: hidden;
+            border: 3px solid #388e3c;
+        }
+
+        .road {
+            position: absolute;
+            bottom: 20px;
+            width: 100%;
+            height: 50px;
+            background-color: #8d6e63;
+            border-top: 4px dashed #d7ccc8;
+        }
+
+        .jeep {
+            position: absolute;
+            bottom: 25px;
+            left: 5%;
+            font-size: 50px;
+            /* Lampu hadapan menghadap ke kanan (scaleX(-1)) */
+            transform: scaleX(-1);
+            transition: left 1s ease-in-out, transform 0.3s;
+            z-index: 2;
+        }
+
+        .jeep.crash {
+            animation: shake 0.5s;
+        }
+
+        .obstacle {
+            position: absolute;
+            bottom: 30px;
+            right: 15%;
+            font-size: 45px;
+        }
+
+        .star-anim {
+            position: absolute;
+            top: 20%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            font-size: 60px;
+            display: none;
+            animation: popUp 1s ease-out;
+        }
+
+        /* Paparan Teks & Suku Kata */
+        .instruction {
+            font-size: 1.3rem;
+            color: #333;
+            text-align: center;
+            font-weight: bold;
+        }
+
+        .sentence-card {
+            background: #f1f8e9;
+            border: 3px dashed #7cb342;
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+            min-height: 120px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+
+        .syllable-word {
+            display: inline-flex;
+            font-size: 2rem;
+            font-weight: bold;
+            margin: 0 6px;
+        }
+
+        /* Warna Hitam dan Merah sahaja untuk suku kata */
+        .s-black { color: #000000; }
+        .s-red { color: #d32f2f; }
+
+        /* Kawalan Mikrofon & Butang */
+        .controls {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .mic-btn {
+            background-color: #4caf50;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.5rem;
+            font-weight: bold;
+            border-radius: 50px;
+            cursor: pointer;
+            box-shadow: 0 6px #2e7d32;
+            transition: all 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .mic-btn:hover {
+            background-color: #43a047;
+        }
+
+        .mic-btn:active {
+            box-shadow: 0 2px #2e7d32;
+            transform: translateY(4px);
+        }
+
+        .mic-btn.listening {
+            background-color: #f44336;
+            box-shadow: 0 6px #c62828;
+            animation: pulse 1.5s infinite;
+        }
+
+        .retry-btn {
+            background-color: #ff9800;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 1.2rem;
+            font-weight: bold;
+            border-radius: 30px;
+            cursor: pointer;
+            box-shadow: 0 4px #e65100;
+            display: none;
+        }
+
+        .status-msg {
+            font-size: 1.3rem;
+            font-weight: bold;
+            text-align: center;
+            min-height: 35px;
+        }
+
+        .status-msg.success { color: #2e7d32; }
+        .status-msg.error { color: #c62828; }
+
+        .transcript-box {
+            font-size: 1.1rem;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+        }
+
+        /* Skrin Tamat */
+        .end-screen {
+            display: none;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .end-screen h2 {
+            font-size: 2.2rem;
+            color: #2e7d32;
+        }
+
+        .final-score {
+            font-size: 2.5rem;
+            color: #e65100;
+            font-weight: bold;
+            margin: 20px 0;
+        }
+
+        .feedback-text {
+            font-size: 1.5rem;
+            color: #333;
+            margin-bottom: 30px;
+        }
+
+        .restart-btn {
+            background-color: #2196f3;
+            color: white;
+            border: none;
+            padding: 16px 32px;
+            font-size: 1.4rem;
+            font-weight: bold;
+            border-radius: 40px;
+            cursor: pointer;
+            box-shadow: 0 6px #1565c0;
+        }
+
+        /* Animasi */
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        @keyframes shake {
+            0%, 100% { transform: scaleX(-1) translateX(0); }
+            20%, 60% { transform: scaleX(-1) translateX(10px); }
+            40%, 80% { transform: scaleX(-1) translateX(-10px); }
+        }
+
+        @keyframes popUp {
+            0% { transform: translate(-50%, -50%) scale(0); opacity: 0; }
+            50% { transform: translate(-50%, -50%) scale(1.4); opacity: 1; }
+            100% { transform: translate(-50%, -50%) scale(1); opacity: 0; }
+        }
+    </style>
+</head>
+<body>
+
+<div class="game-container">
+    <!-- Header -->
+    <div class="header">
+        <div class="title">🚙 Jip Safari Adam</div>
+        <div class="score-board">⭐ Markah: <span id="score">0</span> / 50</div>
+    </div>
+
+    <!-- Skrin Utama Permainan -->
+    <div id="game-play">
+        <!-- Stage Visual -->
+        <div class="safari-stage">
+            <div class="road"></div>
+            <div class="jeep" id="jeep">🚙</div>
+            <div class="obstacle" id="obstacle">🪨</div>
+            <div class="star-anim" id="star-anim">✨🎉✨</div>
+        </div>
+
+        <!-- Arahan & Kad Soalan -->
+        <p class="instruction">🎤 Baca ayat di bawah dengan jelas dan betul.</p>
+
+        <div class="sentence-card" id="sentence-display">
+            <!-- Teks suku kata dimuatkan oleh JS -->
+        </div>
+
+        <!-- Mesej Status & Pengecaman Teks -->
+        <div class="status-msg" id="status-msg"></div>
+        <div class="transcript-box" id="transcript-box"></div>
+
+        <!-- Kawalan -->
+        <div class="controls">
+            <button class="mic-btn" id="mic-btn" onclick="toggleListening()">
+                <span>🎤</span> <span id="mic-btn-text">Tekan & Mula Membaca</span>
+            </button>
+            <button class="retry-btn" id="retry-btn" onclick="resetAttempt()">💥 Cuba Semula</button>
+        </div>
+    </div>
+
+    <!-- Skrin Keputusan Akhir -->
+    <div class="end-screen" id="end-screen">
+        <h2>🎉 Tahniah! Anda Berjaya Menamatkan Pengembaraan Safari!</h2>
+        <div class="final-score">Skor Akhir: <span id="final-score-val">0</span> / 50 markah</div>
+        <div class="feedback-text" id="feedback-text"></div>
+        <button class="restart-btn" onclick="restartGame()">🔄 Main Semula</button>
+    </div>
+</div>
+
+<script>
+    // Data Soalan dan Pemecahan Suku Kata Mengikut Ketetapan
+    const questions = [
+        {
+            text: "Adam dan keluarganya pergi ke safari untuk melihat pelbagai haiwan yang menakjubkan.",
+            syllables: ["A-dam", "dan", "ke-lu-ar-ga-nya", "per-gi", "ke", "sa-fa-ri", "un-tuk", "me-li-hat", "pel-ba-gai", "hai-wan", "yang", "me-nak-jub-kan."]
+        },
+        {
+            text: "Adam terdengar bunyi ngauman yang kuat.",
+            syllables: ["A-dam", "ter-de-ngar", "bu-nyi", "nga-u-man", "yang", "ku-at."]
+        },
+        {
+            text: "Adam berasa teruja melihat seekor singa.",
+            // Pemecahan teruja -> te (hitam), ru (merah), ja (hitam)
+            syllables: ["A-dam", "be-ra-sa", "te-ru-ja", "me-li-hat", "se-e-kor", "si-nga."]
+        },
+        {
+            text: "Mereka berhenti seketika melihat ular yang menjalar pada dahan pokok.",
+            syllables: ["Me-re-ka", "ber-hen-ti", "se-ke-ti-ka", "me-li-hat", "u-lar", "yang", "men-ja-lar", "pa-da", "da-han", "po-kok."]
+        },
+        {
+            text: "Seekor monyet kecil membuat muka lucu kepada mereka.",
+            syllables: ["Se-e-kor", "mo-nyet", "ke-cil", "mem-bu-at", "mu-ka", "lu-cu", "ke-pa-da", "me-re-ka."]
+        }
+    ];
+
+    const obstacles = ["🪨", "🌴", "🪨", "🌳", "🪨"];
+
+    let currentQuestionIndex = 0;
+    let score = 0;
+    let isListening = false;
+    let recognition;
+
+    // Elemen DOM
+    const sentenceDisplay = document.getElementById('sentence-display');
+    const statusMsg = document.getElementById('status-msg');
+    const transcriptBox = document.getElementById('transcript-box');
+    const scoreDisplay = document.getElementById('score');
+    const micBtn = document.getElementById('mic-btn');
+    const micBtnText = document.getElementById('mic-btn-text');
+    const retryBtn = document.getElementById('retry-btn');
+    const jeep = document.getElementById('jeep');
+    const obstacle = document.getElementById('obstacle');
+    const starAnim = document.getElementById('star-anim');
+
+    // Inisialisasi Speech Recognition
+    if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        recognition = new SpeechRecognition();
+        recognition.lang = 'ms-MY'; // Bahasa Melayu
+        recognition.continuous = false;
+        recognition.interimResults = false;
+
+        recognition.onstart = () => {
+            isListening = true;
+            micBtn.classList.add('listening');
+            micBtnText.innerText = "Mendengar... Sila baca";
+            statusMsg.innerText = "";
+            transcriptBox.innerText = "";
+        };
+
+        recognition.onresult = (event) => {
+            const transcript = event.results[0][0].transcript;
+            transcriptBox.innerText = `Sebut: "${transcript}"`;
+            checkReading(transcript);
+        };
+
+        recognition.onerror = (event) => {
+            console.error("Speech Error:", event.error);
+            handleFailure("Suara tidak jelas atau tidak dikesan. Cuba lagi.");
+            stopListening();
+        };
+
+        recognition.onend = () => {
+            stopListening();
+        };
+    } else {
+        alert("Pelayar anda tidak menyokong Speech Recognition. Sila gunakan Google Chrome atau Microsoft Edge.");
+    }
+
+    // Fungsi Papar Soalan
+    function loadQuestion() {
+        sentenceDisplay.innerHTML = "";
+        const q = questions[currentQuestionIndex];
+        
+        // Papar suku kata berselang-seli Hitam (ganjil) dan Merah (genap)
+        q.syllables.forEach(word => {
+            const wordSpan = document.createElement('span');
+            wordSpan.className = 'syllable-word';
+            
+            const parts = word.split('-');
+            parts.forEach((part, idx) => {
+                const partSpan = document.createElement('span');
+                partSpan.className = (idx % 2 === 0) ? 's-black' : 's-red';
+                partSpan.innerText = part;
+                wordSpan.appendChild(partSpan);
+            });
+            
+            sentenceDisplay.appendChild(wordSpan);
+        });
+
+        // Set semula kedudukan Jip
+        jeep.style.left = "5%";
+        jeep.classList.remove('crash');
+        obstacle.innerText = obstacles[currentQuestionIndex % obstacles.length];
+        statusMsg.innerText = "";
+        statusMsg.className = "status-msg";
+        transcriptBox.innerText = "";
+        retryBtn.style.display = "none";
+        micBtn.style.display = "flex";
+    }
+
+    // Buka / Tutup Mikrofon
+    function toggleListening() {
+        if (!recognition) return;
+        if (isListening) {
+            recognition.stop();
+        } else {
+            recognition.start();
+        }
+    }
+
+    function stopListening() {
+        isListening = false;
+        micBtn.classList.remove('listening');
+        micBtnText.innerText = "Tekan & Mula Membaca";
+    }
+
+    // Semak Ketepatan Bacaan
+    function checkReading(transcript) {
+        const targetText = questions[currentQuestionIndex].text;
+        
+        // Pembersihan teks
+        const cleanTarget = targetText.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+        const cleanUser = transcript.toLowerCase().replace(/[.,\/#!$%\^&\*;:{}=\-_`~()]/g, "").trim();
+
+        const targetWords = cleanTarget.split(" ").filter(w => w !== "");
+        const userWords = cleanUser.split(" ").filter(w => w !== "");
+        
+        let matchCount = 0;
+        targetWords.forEach(word => {
+            if (userWords.includes(word)) {
+                matchCount++;
+            }
+        });
+
+        const accuracy = matchCount / targetWords.length;
+
+        // Had Asas Kemenangan (70% perkataan betul dianggap LULUS untuk MBPK)
+        if (accuracy >= 0.7) {
+            handleSuccess();
+        } else {
+            handleFailure("Bacaan kurang tepat. Jip terlanggar halangan!");
+        }
+    }
+
+    // Pengendalian Bacaan BETUL
+    function handleSuccess() {
+        statusMsg.innerText = "🎉 Tahniah! Bacaan anda tepat!";
+        statusMsg.className = "status-msg success";
+        
+        // Audio Maklum Balas Masa Permainan
+        speakText("Bagus! Teruskan perjalanan!");
+
+        // Animasi Jip Bergerak
+        jeep.style.left = "65%";
+        
+        // Animasi Bintang
+        starAnim.style.display = "block";
+        setTimeout(() => { starAnim.style.display = "none"; }, 1000);
+
+        // Tambah Markah
+        score += 10;
+        scoreDisplay.innerText = score;
+
+        // Pindah Soalan / Tamat Permainan
+        setTimeout(() => {
+            currentQuestionIndex++;
+            if (currentQuestionIndex < questions.length) {
+                loadQuestion();
+            } else {
+                showEndScreen();
+            }
+        }, 2500);
+    }
+
+    // Pengendalian Bacaan SALAH
+    function handleFailure(message) {
+        statusMsg.innerText = message + " ❌";
+        statusMsg.className = "status-msg error";
+        
+        // Audio Maklum Balas Masa Permainan
+        speakText("Cuba lagi.");
+
+        // Animasi Jip Pelanggaran
+        jeep.style.left = "55%";
+        jeep.classList.add('crash');
+
+        // Tunjuk butang cuba semula
+        micBtn.style.display = "none";
+        retryBtn.style.display = "inline-block";
+    }
+
+    // Reset Percubaan
+    function resetAttempt() {
+        jeep.style.left = "5%";
+        jeep.classList.remove('crash');
+        statusMsg.innerText = "";
+        transcriptBox.innerText = "";
+        retryBtn.style.display = "none";
+        micBtn.style.display = "flex";
+    }
+
+    // Fungsi Text-To-Speech (Output Suara Masa Permainan)
+    function speakText(text) {
+        if ('speechSynthesis' in window) {
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'ms-MY';
+            utterance.rate = 0.9;
+            window.speechSynthesis.speak(utterance);
+        }
+    }
+
+    // Paparan Skrin Tamat (Tanpa Suara & Bunyi)
+    function showEndScreen() {
+        document.getElementById('game-play').style.display = "none";
+        const endScreen = document.getElementById('end-screen');
+        const feedbackText = document.getElementById('feedback-text');
+        document.getElementById('final-score-val').innerText = score;
+
+        // Maklum Balas Mengikut Markah (Paparan Teks Sahaja)
+        let feedbackMsg = "";
+        if (score === 50) {
+            feedbackMsg = "🌟 Hebat! Anda membaca semua ayat dengan sangat baik!";
+        } else if (score === 40) {
+            feedbackMsg = "😊 Bagus! Teruskan membaca untuk menjadi lebih lancar.";
+        } else if (score === 30) {
+            feedbackMsg = "👍 Anda semakin mahir. Cuba lagi untuk mendapatkan markah penuh.";
+        } else {
+            feedbackMsg = "💪 Jangan putus asa! Teruskan berlatih membaca bersama Adam.";
+        }
+
+        feedbackText.innerText = feedbackMsg;
+        endScreen.style.display = "block";
+    }
+
+    // Mula Semula Permainan
+    function restartGame() {
+        currentQuestionIndex = 0;
+        score = 0;
+        scoreDisplay.innerText = score;
+        document.getElementById('end-screen').style.display = "none";
+        document.getElementById('game-play').style.display = "block";
+        loadQuestion();
+    }
+
+    // Mulakan Game Apabila Halaman Dimuatkan
+    window.onload = loadQuestion;
+</script>
+
+</body>
+</html>
